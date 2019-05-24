@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableHighlight, TextInput, StyleSheet } from 'react-native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
-import { formatDateTime } from './api'
+import { formatDateTime } from '../api'
 
 
 export default class EventForm extends React.Component {

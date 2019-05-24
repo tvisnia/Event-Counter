@@ -10,7 +10,7 @@ import PropTypes from 'prop-types'
 import {
     formatDate,
     getCountdownParts
-} from './api.js'
+} from '../api'
 
 export default EventCard = ({ event }) => {
     const {

@@ -1,5 +1,20 @@
 import moment from 'moment'
 
+
+const url = 'https://jsonstorage.net/api/items/a9db966a-caeb-4c7e-a917-32a1d3aa9b20'
+
+export function getEvents() {
+    return fetch(url)
+        .then(response =>
+            response.json()
+        )
+        .then(events => events.map(event => ({
+            ...event,
+            date: new Date(event.date)
+        }))
+        )
+}
+
 export function formatDate(dateString) {
     const parsed = moment(new Date(dateString))
 
@@ -14,7 +29,7 @@ export function formatDate(dateString) {
 export function formatDateTime(dateString) {
     const parsed = moment(new Date(dateString))
 
-    if(!parsed.isValid()) {
+    if (!parsed.isValid()) {
         return dateString
     }
 
