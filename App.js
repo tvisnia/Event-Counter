@@ -3,25 +3,12 @@ import { YellowBox } from 'react-native'
 import EventList from './screens/EventList'
 import EventForm from './screens/EventForm'
 import { createStackNavigator, createAppContainer } from 'react-navigation'
-import Event from './model/EventRealmSchema'
-
-const Realm = require('realm');
+import EventDetails from './screens/EventDetails';
 
 YellowBox.ignoreWarnings([
   'Warning: componentWillMount is deprecated',
   'Warning: componentWillReceiveProps is deprecated'
 ])
-
-const dbOptions = {
-  schema: [{
-    name: 'Event',
-    properties: {
-      title: 'string',
-      date: 'date',
-      id: 'string'
-    }
-  }]
-}
 
 const AppNavigator = createStackNavigator({
   list: {
@@ -36,6 +23,12 @@ const AppNavigator = createStackNavigator({
       title: 'Add an event'
     })
   },
+  details: {
+    screen: EventDetails,
+    navigationOptions: () => ({
+      title: 'Event details'
+    })
+  }
 })
 
 export default createAppContainer(AppNavigator)
@@ -51,7 +44,6 @@ class App extends React.Component {
   }
 
   render() {
-    console.log("schema : " + Event.getSchema())
     return <AppNavigator />
   }
 }

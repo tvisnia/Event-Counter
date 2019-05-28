@@ -1,18 +1,10 @@
 import React from 'react'
-import {
-    Text,
-    View,
-    StyleSheet
-}
-    from 'react-native'
-
+import { Text, View, StyleSheet } from 'react-native'
 import PropTypes from 'prop-types'
-import {
-    formatDate,
-    getCountdownParts
-} from '../api'
+import { formatDate, getCountdownParts } from '../api'
 
 export default EventCard = ({ event }) => {
+
     const {
         days,
         hours,
@@ -53,6 +45,8 @@ export default EventCard = ({ event }) => {
     )
 }
 
+
+
 EventCard.propTypes = {
     event: PropTypes.shape({
         title: PropTypes.string.isRequired,
@@ -61,6 +55,11 @@ EventCard.propTypes = {
 }
 
 const styles = StyleSheet.create({
+    card: {
+        backgroundColor: '#ffffff',
+        marginHorizontal: 15,
+        marginBottom: 7
+    },
 
     cardHeader: {
         flex: 1,
@@ -86,8 +85,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingLeft: '5%',
-        paddingRight: '5%'
     },
     counter: {
         width: '25%',

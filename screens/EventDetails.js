@@ -5,12 +5,12 @@ import { formatDateTime } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
 
 
-export default class EventForm extends React.Component {
 
+export default class EventDetails extends React.Component {
+
+    event = navigation.getParam("event", {})
     state = {
-        title: null,
-        date: '',
-        realm: null
+        modified: false,
     }
 
     writeEventToRealm = ({ title, date }) => {
@@ -18,14 +18,13 @@ export default class EventForm extends React.Component {
             if (this.realm == null) this.setState({ realm: realm });
             try {
                 realm.write(() => {
-                    // if (realm.objects(EVENTS_KEY).filtered(`id=${}"`).length === 0)
-                    realm.create(EVENTS_KEY, {
-                        "title": title,
-                        "date": date,
-                        "id": title + date.toString()
-                    })
+                    realm.create(EVENTS_KEY,
+                        {
+                            "id": event.id,
+                            "title": title,
+                            "date": date,
+                        }, true) //flag indicating update mode in realm
                 })
-                // console.log("Objects : " + realm.objects('Event').length)
             }
             catch (error) { Alert.alert(`Problem occured while opening Realm instance: ${error}`) }
         })
@@ -33,27 +32,25 @@ export default class EventForm extends React.Component {
             ));
     }
 
-    handleAddPress = () => {
+    handleSavePress = () => {
         if (this.state.title === null || this.state.date === null)
             Alert.alert('Enter event title and date.')
         else {
-            this.writeEventToRealm(this.state)
-            this.props.navigation.goBack()
+            this.writeEventToRealm(this.state.title, this.state.date)
+            navigation.goBack()
         }
     }
 
     handleChangeTitle = (value) => {
-        this.setState({ title: value })
+        this.setState({ modified: true, title: value })
     }
 
     handleDatePress = () => {
-        this.setState({ showDatePicker: true })
+        this.setState({ showDatepropPicker: true })
     }
 
     handleDatePicked = (date) => {
-        this.setState({
-            date,
-        })
+        this.setState({ modified: true, date: date })
     }
 
     handleDatePickerHide = () => {
@@ -90,10 +87,10 @@ export default class EventForm extends React.Component {
                     />
                 </View>
                 <TouchableHighlight
-                    onPress={this.handleAddPress}
+                    onPress={this.handleSavePress}
                     style={styles.button}
                 >
-                    <Text style={{ color: '#ffffff' }}>ADD</Text>
+                    <Text style={{ color: '#ffffff' }}>{this.state.modified ? "SAVE AND GO BACK" : "BACK"}</Text>
                 </TouchableHighlight>
             </View>
         )
