@@ -1,43 +1,58 @@
 import React from 'react'
-import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert, Keyboard } from 'react-native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { formatDateTime } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
 
 
-
 export default class EventDetails extends React.Component {
 
-    event = navigation.getParam("event", {})
+    event = null
+
+    constructor(props) {
+        super(props)
+    }
+
+    componentDidMount() {
+        event = this.props.navigation.getParam("event", {})
+        this.setState({ title: event.title, date: event.date })
+    }
+
+
     state = {
         modified: false,
     }
 
-    writeEventToRealm = ({ title, date }) => {
+    writeEventToRealm = (title, date) => {
         Realm.open(EVENT_SCHEMA.schema).then(realm => {
-            if (this.realm == null) this.setState({ realm: realm });
             try {
                 realm.write(() => {
                     realm.create(EVENTS_KEY,
                         {
-                            "id": event.id,
                             "title": title,
                             "date": date,
+                            "id": event.id
                         }, true) //flag indicating update mode in realm
                 })
             }
-            catch (error) { Alert.alert(`Problem occured while opening Realm instance: ${error}`) }
+            catch (error) {
+                Alert.alert(`Problem occured while writing to Realm. ${error}`)
+                console.log(`Problem occured while writing to Realm. ${error}`)
+            }
         })
-            .catch(error => Alert.alert(`Problem occured while writing to Realm. Error : ${error}`
-            ));
+            .catch(error => {
+                Alert.alert(`Problem occured while opening Realm instance.  ${error}`)
+                console.log(`Problem occured while openin Realm instance. ${error}`)
+            }
+            );
     }
 
-    handleSavePress = () => {
+    handleSavePress = (title, date) => {
         if (this.state.title === null || this.state.date === null)
-            Alert.alert('Enter event title and date.')
+            alert('Enter event title and date.')
         else {
-            this.writeEventToRealm(this.state.title, this.state.date)
-            navigation.goBack()
+            this.writeEventToRealm(title, date)
+            this.props.navigation.goBack()
         }
     }
 
@@ -46,14 +61,16 @@ export default class EventDetails extends React.Component {
     }
 
     handleDatePress = () => {
-        this.setState({ showDatepropPicker: true })
+        this.setState({ showDatePicker: true })
     }
 
     handleDatePicked = (date) => {
+        this.handleDatePickerHide()
         this.setState({ modified: true, date: date })
     }
 
     handleDatePickerHide = () => {
+        Keyboard.dismiss()
         this.setState({ showDatePicker: false })
     }
 
@@ -75,19 +92,22 @@ export default class EventDetails extends React.Component {
                         style={[styles.text, styles.borderTop]}
                         placeholder="Event date"
                         spellCheck={false}
-                        value={formatDateTime(this.state.date.toString())}
-                        editable={this.state.showDatePicker}
+                        value={formatDateTime(this.state.date)}
                         onFocus={this.handleDatePress}
                     />
                     <DateTimePicker
                         isVisible={this.state.showDatePicker}
                         mode='datetime'
-                        onConfirm={this.handleDatePicked}
-                        onCancel={this.handleDatePickerHide}
+                        onConfirm={(date) => {
+                            this.handleDatePicked(date)}}
+                        onCancel={() => {
+                            this.handleDatePickerHide()
+                        }
+                        }
                     />
                 </View>
                 <TouchableHighlight
-                    onPress={this.handleSavePress}
+                    onPress={() => { this.handleSavePress(this.state.title, this.state.date) }}
                     style={styles.button}
                 >
                     <Text style={{ color: '#ffffff' }}>{this.state.modified ? "SAVE AND GO BACK" : "BACK"}</Text>

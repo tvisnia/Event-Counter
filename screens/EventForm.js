@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert, Keyboard } from 'react-native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { formatDateTime } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
@@ -27,9 +27,9 @@ export default class EventForm extends React.Component {
                 })
                 // console.log("Objects : " + realm.objects('Event').length)
             }
-            catch (error) { Alert.alert(`Problem occured while opening Realm instance: ${error}`) }
+            catch (error) { Alert.alert(`Problem occured while opening Realm instance : ${error}`) }
         })
-            .catch(error => Alert.alert(`Problem occured while writing to Realm. Error : ${error}`
+            .catch(error => Alert.alert(`Problem occured while writing to Realm : ${error}`
             ));
     }
 
@@ -51,13 +51,13 @@ export default class EventForm extends React.Component {
     }
 
     handleDatePicked = (date) => {
-        this.setState({
-            date,
-        })
+        this.handleDatePickerHide()
+        this.setState({ date, })
     }
 
     handleDatePickerHide = () => {
         this.setState({ showDatePicker: false })
+        Keyboard.dismiss()
     }
 
     render() {
@@ -79,14 +79,13 @@ export default class EventForm extends React.Component {
                         placeholder="Event date"
                         spellCheck={false}
                         value={formatDateTime(this.state.date.toString())}
-                        editable={this.state.showDatePicker}
                         onFocus={this.handleDatePress}
                     />
                     <DateTimePicker
                         isVisible={this.state.showDatePicker}
                         mode='datetime'
-                        onConfirm={this.handleDatePicked}
-                        onCancel={this.handleDatePickerHide}
+                        onConfirm={(date) => this.handleDatePicked(date)}
+                        onCancel={() => this.handleDatePickerHide()}
                     />
                 </View>
                 <TouchableHighlight

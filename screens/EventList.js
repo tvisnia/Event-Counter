@@ -1,14 +1,19 @@
 import React, { Component } from 'react'
-import { FlatList, StyleSheet, SafeAreaView, Text } from 'react-native'
+import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback } from 'react-native'
 import EventCard from '../views/EventCard'
 import ActionButton from 'react-native-action-button'
 import { getEvents } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
+
 const Realm = require('realm');
 
 var globalState = null
 
 export default class EventList extends Component {
+
+    constructor(props) {
+        super(props)
+    }
 
     state = {
         events: [],
@@ -19,6 +24,7 @@ export default class EventList extends Component {
         this.rerenderEventsEverySecond()
         // this.loadSampleEvents() // data from remote server for display test
         // this.addSampleEventsToRealm()
+        // this.dropAllEvents()
         this.props.navigation.addListener('didFocus', () => {
             this.loadEventsFromRealm()
         })
@@ -111,13 +117,16 @@ export default class EventList extends Component {
     }
 
     handleAddEvent = () => {
-        // this.props.navigation.navigate('form', { onGoBack: this.loadEventsFromRealm })
         this.props.navigation.navigate('form')
     }
 
     loadEventsFromRealm = () => {
         this.readEventsFromRealm()
         this.rerenderEventsEverySecond()
+    }
+
+    navigateToDetailScreen = (event) => {
+        this.props.navigation.navigate('details', {event: event})
     }
 
     render() {
@@ -128,8 +137,23 @@ export default class EventList extends Component {
                 {!this.state.events.length == 0 && (<FlatList
                     style={styles.list}
                     data={this.state.events}
-                    renderItem={({ item, separators }) => (
-                        <EventCard event={item} />)}
+                    renderItem={({ item }) =>
+                        // style={{
+                        //     height: 70,
+                        //     backgroundColor: '#48BBEC',
+                        //     margin: 10,
+                        //     justifyContent: 'center',
+                        //     alignItems: 'center',
+                        // }}
+                        <TouchableNativeFeedback
+                            useForeground={false}
+                            background={TouchableNativeFeedback.Ripple("aqua", true)}
+                            onPress={() =>this.navigateToDetailScreen(item)}>
+                            <View style={{ flex: 0.8 }}>
+                                <EventCard event={item} />
+                            </View>
+                        </TouchableNativeFeedback>
+                    }
                     keyExtractor={item => item.id}
                 />)
                 }
@@ -148,11 +172,14 @@ export default class EventList extends Component {
             </SafeAreaView>
         )
     }
+
 }
+
 
 
 const styles = StyleSheet.create({
     container: {
+        backgroundColor: '#f3f3f3',
         flex: 1,
     },
     noEventsText: {
@@ -163,7 +190,6 @@ const styles = StyleSheet.create({
     list: {
         flex: 1,
         paddingTop: 20,
-        backgroundColor: '#F3F3F3'
     },
     button: {
         position: 'absolute'
