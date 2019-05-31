@@ -13,9 +13,6 @@ YellowBox.ignoreWarnings([
 const AppNavigator = createStackNavigator({
   list: {
     screen: EventList,
-    navigationOptions: () => ({
-      title: 'Your Events'
-    })
   },
   form: {
     screen: EventForm,

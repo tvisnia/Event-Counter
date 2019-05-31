@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
-import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback } from 'react-native'
+import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback, Alert } from 'react-native'
+import { Icon } from 'react-native-elements'
 import EventCard from '../views/EventCard'
+import SelectableEventCard from '../views/SelectableEventCard'
 import ActionButton from 'react-native-action-button'
 import { getEvents } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
@@ -11,13 +13,23 @@ var globalState = null
 
 export default class EventList extends Component {
 
+    static navigationOptions = ({ navigation }) => {
+        return {
+            title: `${navigation.getParam('title', 'Your events')}`,
+            headerRight: navigation.getParam('headerRight', null)
+        }
+    }
+
     constructor(props) {
         super(props)
+        this.eventsRow = {}
     }
 
     state = {
         events: [],
-        realm: null
+        realm: null,
+        longPressed: false,
+        selectedEvents: []
     }
 
     componentDidMount() {
@@ -72,6 +84,7 @@ export default class EventList extends Component {
             ));
     }
 
+    //for test purposes
     addSampleEventsToRealm = () => {
         Realm.open(EVENT_SCHEMA).then(realm => {
             if (this.realm == null) this.setState({ realm: realm });
@@ -98,6 +111,7 @@ export default class EventList extends Component {
             ));
     }
 
+    //for test purposes
     loadSampleEvents = () => {
         getEvents().then(events => {
             this.setState({ events: events })
@@ -126,36 +140,102 @@ export default class EventList extends Component {
     }
 
     navigateToDetailScreen = (event) => {
-        this.props.navigation.navigate('details', {event: event})
+        this.props.navigation.navigate('details', { event: event })
+    }
+
+    toggleEventSelectionMode = () => {
+        this.setState(previousState => ({
+            longPressed: !previousState.longPressed
+        }))
+        this.toggleDeleteEventIcon()
+    }
+
+    toggleDeleteEventIcon = () => {
+        this.state.longPressed ?
+            this.props.navigation.setParams({
+                headerRight:
+                    <View style={{ marginRight: 15 }}>
+                        <Icon
+                            name='trash-can'
+                            color='#000000'
+                            type='material-community'
+                            onPress={() => this.showDeletionAlert()} />
+                    </View>,
+                title: 'Select events to delete'
+            }) :
+            this.props.navigation.setParams({
+                headerRight: null,
+                title: 'Your events'
+            })
+    }
+
+    showDeletionAlert = () => {
+        return Alert.alert(
+            'Are you sure to delete those events ?',
+            'This is irreversible.',
+            [
+                {
+                    text: 'Delete ',
+                    onPress: () => {
+                        this.setState({ longPressed: false })
+                        this.deleteSelectedEvents()
+                    }
+                },
+                {
+                    text: 'Cancel ',
+                    onPress: () => {
+                        this.setState({ longPressed: false })
+                        this.toggleDeleteEventIcon()
+                    },
+                    style: 'cancel'
+                }],
+            { cancelable: true }
+        )
+    }
+
+    deleteSelectedEvents = () => {
+        this.toggleDeleteEventIcon()
+
+    }
+
+    handleSelectableEventPress = (item) => {
+        let list = this.state.selectedEvents
+        let pressedItem = this.eventsRow[item.id]
+        pressedItem.toggleSelection() ?
+            list.push(item)
+            : list = this.state.selectedEvents.filter(event => event.id !== item.id)
+        this.setState({
+            selectedEvents: list
+        })
     }
 
     render() {
-        // let toLog = this.state.realm ? this.state.realm.objects('Event').length : "realm instance is null"
-        // console.log(toLog)
         return (
             <SafeAreaView style={styles.container}>
-                {!this.state.events.length == 0 && (<FlatList
+                {!this.state.events.length == 0 && <FlatList
                     style={styles.list}
                     data={this.state.events}
                     renderItem={({ item }) =>
-                        // style={{
-                        //     height: 70,
-                        //     backgroundColor: '#48BBEC',
-                        //     margin: 10,
-                        //     justifyContent: 'center',
-                        //     alignItems: 'center',
-                        // }}
                         <TouchableNativeFeedback
                             useForeground={false}
-                            background={TouchableNativeFeedback.Ripple("aqua", true)}
-                            onPress={() =>this.navigateToDetailScreen(item)}>
-                            <View style={{ flex: 0.8 }}>
-                                <EventCard event={item} />
+                            onPress={() => {
+                                this.state.longPressed ?
+                                    this.handleSelectableEventPress(item)
+                                    : this.navigateToDetailScreen(item)
+                            }}
+                            onLongPress={() => this.toggleEventSelectionMode()}
+                            background={TouchableNativeFeedback.Ripple("aqua", true)}>
+                            <View style={{ flex: 2.8 }}>
+                                {this.state.longPressed ?
+                                    <SelectableEventCard
+                                        event={item}
+                                        ref={(SelectableEventCard) => { this.eventsRow[item.id] = SelectableEventCard }} />
+                                    : <EventCard event={item} />}
                             </View>
                         </TouchableNativeFeedback>
                     }
                     keyExtractor={item => item.id}
-                />)
+                />
                 }
 
                 {this.state.events.length == 0 && (
@@ -174,8 +254,6 @@ export default class EventList extends Component {
     }
 
 }
-
-
 
 const styles = StyleSheet.create({
     container: {
