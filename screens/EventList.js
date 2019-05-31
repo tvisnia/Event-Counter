@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback, Alert } from 'react-native'
+import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback, Alert, ToastAndroid } from 'react-native'
 import { Icon } from 'react-native-elements'
 import EventCard from '../views/EventCard'
 import SelectableEventCard from '../views/SelectableEventCard'
@@ -34,7 +34,7 @@ export default class EventList extends Component {
 
     componentDidMount() {
         this.rerenderEventsEverySecond()
-        // this.loadSampleEvents() // data from remote server for display test
+        // this.loadSampleEvents()
         // this.addSampleEventsToRealm()
         // this.dropAllEvents()
         this.props.navigation.addListener('didFocus', () => {
@@ -71,8 +71,6 @@ export default class EventList extends Component {
             try {
                 realm.write(() => {
                     this.state.events.forEach(obj => {
-                        // console.log(obj.title)
-                        // if (realm.objects(EVENTS_KEY).filtered(`title="${obj.title}"`).length === 0)
                         realm.create(EVENTS_KEY, obj)
                     });
                 })
@@ -90,8 +88,6 @@ export default class EventList extends Component {
             if (this.realm == null) this.setState({ realm: realm });
             try {
                 realm.write(() => {
-                    // console.log(obj.title)
-                    // if (realm.objects(EVENTS_KEY).filtered(`title="${obj.title}"`).length === 0)
                     realm.create(EVENTS_KEY, {
                         "title": "Przykładowe wydarzenie 1  ",
                         "date": "2019-06-15T00:00:00.000Z",
@@ -103,7 +99,6 @@ export default class EventList extends Component {
                         "id": "1002"
                     })
                 })
-                // console.log("Objects : " + realm.objects('Event').length)
             }
             catch (error) { console.log(`Problem occured while opening Realm instance: ${error}`) }
         })
@@ -159,7 +154,11 @@ export default class EventList extends Component {
                             name='trash-can'
                             color='#000000'
                             type='material-community'
-                            onPress={() => this.showDeletionAlert()} />
+                            onPress={() => {
+                                if (this.state.selectedEvents.length !== 0)
+                                    this.showDeletionAlert()
+                                else alert('Select at least one event.')
+                            }} />
                     </View>,
                 title: 'Select events to delete'
             }) :
@@ -195,7 +194,24 @@ export default class EventList extends Component {
 
     deleteSelectedEvents = () => {
         this.toggleDeleteEventIcon()
-
+        Realm.open(EVENT_SCHEMA).then(realm => {
+            this.setState({ realm: realm });
+            try {
+                realm.write(() => {
+                    this.state.selectedEvents.forEach(
+                        event => realm.delete(realm.objectForPrimaryKey(EVENTS_KEY, event.id))
+                    )
+                    ToastAndroid.show(`Deleted events : ${this.state.selectedEvents.length}.`, ToastAndroid.SHORT)
+                    this.setState({
+                        selectedEvents: []
+                    })
+                    this.loadEventsFromRealm()
+                })
+            }
+            catch (err) { console.log(`Problem occured while writing to Realm : ${err}`) }
+        })
+            .catch(error => console.log(`Problem occured while opening Realm instance : ${error}`
+            ));
     }
 
     handleSelectableEventPress = (item) => {
@@ -242,13 +258,13 @@ export default class EventList extends Component {
                     <Text
                         style={styles.noEventsText}>No events added.</Text>)}
 
-                <ActionButton
+                {this.state.longPressed === false && <ActionButton
                     style={styles.button}
                     key="fab"
                     onPress={this.handleAddEvent}
                     buttonColor="rgba(231, 76, 60, 1)"
                 >
-                </ActionButton>
+                </ActionButton>}
             </SafeAreaView>
         )
     }
