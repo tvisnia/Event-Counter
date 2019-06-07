@@ -1,15 +1,24 @@
 import React from 'react'
-import { Text, View, StyleSheet, TouchableNativeFeedback } from 'react-native'
-import PropTypes from 'prop-types'
+import { Text, View, StyleSheet } from 'react-native'
 import { formatDate, getCountdownParts } from '../api'
+import { NavigationScreenProp } from 'react-navigation'
+import Event from '../model/Event'
 
-export default class EventCard extends React.PureComponent {
+interface Props {
+    event: Event
+};
 
-    state = {
+interface State {
+    selected: boolean
+}
+
+export default class EventCard extends React.PureComponent<Props, State> {
+
+    state: State = {
         selected: false
     }
 
-    constructor(props) {
+    constructor(props: Props) {
         super(props)
         this._onPress.bind(this)
     }
@@ -17,7 +26,6 @@ export default class EventCard extends React.PureComponent {
 
     _onPress = function (item) {
         alert(`Clicked ${item.id}`)
-        // this.props.navigation.navigate('details', { item })
     }
 
     toggleSelectionMode = (prevState) => {
@@ -27,7 +35,7 @@ export default class EventCard extends React.PureComponent {
     }
 
     getEventCardRenderer = () => {
-        let event = this.props.event
+        let event: Event = this.props.event
         const {
             days,
             hours,
@@ -68,14 +76,6 @@ export default class EventCard extends React.PureComponent {
     render() {
         return (this.getEventCardRenderer())
     }
-}
-
-EventCard.propTypes = {
-    event: PropTypes.shape({
-        title: PropTypes.string.isRequired,
-        date: PropTypes.instanceOf(Date),
-        id: PropTypes.string.isRequired
-    }),
 }
 
 const styles = StyleSheet.create({

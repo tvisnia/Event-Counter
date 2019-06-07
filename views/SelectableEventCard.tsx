@@ -1,17 +1,26 @@
 import React from 'react'
 import { Text, View, StyleSheet } from 'react-native'
 import { CheckBox } from 'react-native-elements'
-import PropTypes from 'prop-types'
 import { formatDate, getCountdownParts } from '../api'
-import { TouchableNativeFeedback } from 'react-native-gesture-handler';
+import { NavigationScreenProp } from 'react-navigation'
+import Event from '../model/Event'
 
-export default class SelectableEventCard extends React.PureComponent {
+interface Props {
+    navigation?: NavigationScreenProp<any, any>
+    event: Event
+};
 
-    state = {
+interface State {
+    selected : boolean
+}
+
+export default class SelectableEventCard extends React.PureComponent<Props, State> {
+
+    state: State = {
         selected: false
     }
 
-    constructor(props) {
+    constructor(props: Props) {
         super(props)
     }
 
@@ -20,12 +29,11 @@ export default class SelectableEventCard extends React.PureComponent {
         this.setState({
             selected: toSet
         })
-        console.log(toSet)
         return toSet
     }
 
     getSelectableEventCardRenderer = () => {
-        let event = this.props.event
+        let event: Event = this.props.event
         const {
             days,
             hours,
@@ -77,14 +85,6 @@ export default class SelectableEventCard extends React.PureComponent {
 }
 
 
-
-SelectableEventCard.propTypes = {
-    event: PropTypes.shape({
-        title: PropTypes.string.isRequired,
-        date: PropTypes.instanceOf(Date),
-        id: PropTypes.string.isRequired
-    }),
-}
 
 const styles = StyleSheet.create({
     card: {
@@ -142,5 +142,4 @@ const styles = StyleSheet.create({
         width: '10%',
         flex: 1
     }
-
 })

@@ -1,9 +1,9 @@
 import React from 'react'
 import { YellowBox } from 'react-native'
-import EventList from './screens/EventList'
-import EventForm from './screens/EventForm'
+import TypedEventList from './screens/TypedEventList'
+import TypedEventForm from './screens/TypedEventForm'
 import { createStackNavigator, createAppContainer } from 'react-navigation'
-import EventDetails from './screens/EventDetails';
+import TypedEventDetails from './screens/TypedEventDetails';
 
 YellowBox.ignoreWarnings([
   'Warning: componentWillMount is deprecated',
@@ -12,16 +12,16 @@ YellowBox.ignoreWarnings([
 
 const AppNavigator = createStackNavigator({
   list: {
-    screen: EventList,
+    screen: TypedEventList,
   },
   form: {
-    screen: EventForm,
+    screen: TypedEventForm,
     navigationOptions: () => ({
       title: 'Add an event'
     })
   },
   details: {
-    screen: EventDetails,
+    screen: TypedEventDetails,
     navigationOptions: () => ({
       title: 'Event details'
     })
@@ -34,10 +34,6 @@ class App extends React.Component {
 
   constructor(props) {
     super(props)
-    console.log("App constructed.")
-    this.state = {
-      realm: null
-    }
   }
 
   render() {

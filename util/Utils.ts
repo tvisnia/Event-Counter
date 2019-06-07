@@ -1,5 +1,5 @@
 //Realm utils
-export const EVENTS_KEY = 'Event'
+export const EVENTS_KEY: string = 'Event'
 export const EVENT_SCHEMA = {
     schema: [{
         name: EVENTS_KEY,

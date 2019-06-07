@@ -6,41 +6,56 @@ import SelectableEventCard from '../views/SelectableEventCard'
 import ActionButton from 'react-native-action-button'
 import { getEvents } from '../api'
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
+import { NavigationScreenProp } from 'react-navigation'
+import Event from '../model/Event'
 
 const Realm = require('realm');
 
 var globalState = null
 
-export default class EventList extends Component {
+interface Props {
+    navigation: NavigationScreenProp<any, any>
+};
+
+interface State {
+    events: Event[],
+    selectedEvents: Event[],
+    realm: any,
+    longPressed: boolean,
+}
+
+export default class TypedEventList extends Component<Props, State> {
+
+    eventsRow
+
+    state: State = {
+        events: [],
+        selectedEvents: [],
+        realm: null,
+        longPressed: false,
+    }
 
     static navigationOptions = ({ navigation }) => {
         return {
             title: `${navigation.getParam('title', 'Your events')}`,
-            headerRight: navigation.getParam('headerRight', null)
+            headerRight: navigation.getParam('headerRight', null),
         }
     }
 
-    constructor(props) {
+    constructor(props: Props) {
         super(props)
         this.eventsRow = {}
     }
 
-    state = {
-        events: [],
-        realm: null,
-        longPressed: false,
-        selectedEvents: []
-    }
-
     componentDidMount() {
-        this.rerenderEventsEverySecond()
+        this.tick()
         // this.loadSampleEvents()
         // this.addSampleEventsToRealm()
         // this.dropAllEvents()
+
         this.props.navigation.addListener('didFocus', () => {
             this.loadEventsFromRealm()
         })
-
     }
 
     dropAllEvents = () => {
@@ -67,7 +82,7 @@ export default class EventList extends Component {
 
     writeEventsToRealm = () => {
         Realm.open(EVENT_SCHEMA).then(realm => {
-            if (this.realm == null) this.setState({ realm: realm });
+            if (this.state.realm == null) this.setState({ realm: realm });
             try {
                 realm.write(() => {
                     this.state.events.forEach(obj => {
@@ -85,7 +100,7 @@ export default class EventList extends Component {
     //for test purposes
     addSampleEventsToRealm = () => {
         Realm.open(EVENT_SCHEMA).then(realm => {
-            if (this.realm == null) this.setState({ realm: realm });
+            if (this.state.realm == null) this.setState({ realm: realm });
             try {
                 realm.write(() => {
                     realm.create(EVENTS_KEY, {
@@ -113,7 +128,7 @@ export default class EventList extends Component {
         })
     }
 
-    rerenderEventsEverySecond = () => {
+    tick = () => {
         setInterval(() => {
             this.setState({
                 events: this.state.events.map(event => ({
@@ -131,10 +146,10 @@ export default class EventList extends Component {
 
     loadEventsFromRealm = () => {
         this.readEventsFromRealm()
-        this.rerenderEventsEverySecond()
+        this.tick()
     }
 
-    navigateToDetailScreen = (event) => {
+    navigateToDetailScreen = (event: Event) => {
         this.props.navigation.navigate('details', { event: event })
     }
 
@@ -159,11 +174,13 @@ export default class EventList extends Component {
                                     this.showDeletionAlert()
                                 else alert('Select at least one event.')
                             }} />
+
                     </View>,
-                title: 'Select events to delete'
+                title: `Events to delete : ${this.state.selectedEvents.length}`
             }) :
             this.props.navigation.setParams({
                 headerRight: null,
+                headerCenter: null,
                 title: 'Your events'
             })
     }
@@ -214,21 +231,39 @@ export default class EventList extends Component {
             ));
     }
 
-    handleSelectableEventPress = (item) => {
+    handleSelectableEventPress = (item: Event) => {
         let list = this.state.selectedEvents
         let pressedItem = this.eventsRow[item.id]
-        pressedItem.toggleSelection() ?
+        if (pressedItem.toggleSelection()) {
             list.push(item)
-            : list = this.state.selectedEvents.filter(event => event.id !== item.id)
-        this.setState({
-            selectedEvents: list
+            this.setState({
+                selectedEvents: list
+            })
+        }
+        else {
+            let indexToDelete = list.indexOf(item)
+            console.log(`Index to delete : ${indexToDelete}`)
+            list.splice(indexToDelete, 1)
+            this.setState({
+                selectedEvents: list
+            })
+        }
+        console.log(`Filtered list : ${list.filter(event => event.id !== item.id)}`)
+        console.log(`Selected events : ${this.state.selectedEvents}`)
+        this.updateTitle()
+
+    }
+
+    updateTitle = () => {
+        this.props.navigation.setParams({
+            title: `Events to delete : ${this.state.selectedEvents.length}`
         })
     }
 
     render() {
         return (
             <SafeAreaView style={styles.container}>
-                {!this.state.events.length == 0 && <FlatList
+                {!(this.state.events.length == 0) && <FlatList
                     style={styles.list}
                     data={this.state.events}
                     renderItem={({ item }) =>
@@ -239,14 +274,16 @@ export default class EventList extends Component {
                                     this.handleSelectableEventPress(item)
                                     : this.navigateToDetailScreen(item)
                             }}
-                            onLongPress={() => this.toggleEventSelectionMode()}
-                            background={TouchableNativeFeedback.Ripple("aqua", true)}>
+                            onLongPress={
+                                () => this.toggleEventSelectionMode()
+                            }>
                             <View style={{ flex: 2.8 }}>
                                 {this.state.longPressed ?
                                     <SelectableEventCard
                                         event={item}
                                         ref={(SelectableEventCard) => { this.eventsRow[item.id] = SelectableEventCard }} />
-                                    : <EventCard event={item} />}
+                                    : <EventCard 
+                                        event={item} />}
                             </View>
                         </TouchableNativeFeedback>
                     }
@@ -287,5 +324,8 @@ const styles = StyleSheet.create({
     },
     button: {
         position: 'absolute'
+    },
+    toDeleteCounter: {
+        color: '#000000'
     }
 })
