@@ -1,11 +1,13 @@
 import React, { Component } from 'react'
 import { FlatList, StyleSheet, SafeAreaView, Text, View, TouchableNativeFeedback, Alert, ToastAndroid } from 'react-native'
 import { Icon } from 'react-native-elements'
+import { NavigationScreenProp } from 'react-navigation'
+import ActionButton from 'react-native-action-button'
+
 import EventCard from '../section/EventCard'
 import SelectableEventCard from '../section/SelectableEventCard'
-import ActionButton from 'react-native-action-button'
+
 import { EVENTS_KEY, EVENT_SCHEMA } from '../util/RealmUtils'
-import { NavigationScreenProp } from 'react-navigation'
 import Event from '../model/Event'
 import {
     TITLE, YOUR_EVENTS, HEADER_RIGHT, DID_FOCUS, OBJECTS_WRITTEN, DELETE_WARNING,
@@ -14,21 +16,26 @@ import {
 
 } from '../util/Constants'
 
+import { connect } from 'react-redux';
+import { turnOnSelectionMode, turnOffSelectionMode } from '../redux/actions/selectionModeActions'
+
 const Realm = require('realm');
 var globalState = null
 
 interface Props {
-    navigation: NavigationScreenProp<any, any>
+    mode: boolean
+    navigation: NavigationScreenProp<any, any>,
+    turnOnSelectionMode: () => any,
+    turnOffSelectionMode: () => any
 };
 
 interface State {
     events: Event[],
     selectedEvents: Event[],
     realm: any,
-    longPressed: boolean,
 }
 
-export default class TypedEventList extends Component<Props, State> {
+export class TypedEventList extends Component<Props, State> {
 
     eventsRow
 
@@ -36,7 +43,6 @@ export default class TypedEventList extends Component<Props, State> {
         events: [],
         selectedEvents: [],
         realm: null,
-        longPressed: false,
     }
 
     static navigationOptions = ({ navigation }) => {
@@ -106,16 +112,10 @@ export default class TypedEventList extends Component<Props, State> {
         this.props.navigation.navigate(DETAILS_SCREEN, { event: event })
     }
 
-    toggleEventSelectionMode = () => {
-        this.setState(previousState => ({
-            longPressed: !previousState.longPressed
-        }))
-        this.toggleDeleteEventIcon()
-    }
-
     toggleDeleteEventIcon = () => {
-        const { longPressed, selectedEvents } = this.state
-        longPressed ?
+        const { selectedEvents } = this.state
+
+        this.props.mode === true ?
             this.props.navigation.setParams({
                 headerRight:
                     <View style={{ marginRight: 15 }}>
@@ -147,14 +147,15 @@ export default class TypedEventList extends Component<Props, State> {
                 {
                     text: DELETE,
                     onPress: () => {
-                        this.setState({ longPressed: false })
+                        this.props.turnOffSelectionMode()
                         this.deleteSelectedEvents()
                     }
                 },
                 {
                     text: CANCEL,
                     onPress: () => {
-                        this.setState({ longPressed: false })
+                        this.props.turnOffSelectionMode()
+                        this.clearSelectedEvents()
                         this.toggleDeleteEventIcon()
                     },
                     style: 'cancel'
@@ -188,7 +189,7 @@ export default class TypedEventList extends Component<Props, State> {
     handleSelectableEventPress = (item: Event) => {
         let list = this.state.selectedEvents
         let pressedItem = this.eventsRow[item.id]
-        if (pressedItem.toggleSelection()) {
+        if (pressedItem.toggleSelection() === true) {
             list.push(item)
             this.setState({
                 selectedEvents: list
@@ -211,7 +212,33 @@ export default class TypedEventList extends Component<Props, State> {
         })
     }
 
+    handleEventPress = (item: Event) => {
+        this.props.mode === true ?
+            this.handleSelectableEventPress(item)
+            : this.navigateToDetailScreen(item)
+    }
+
+    toggleSelectionMode = (selectionMode: boolean) => {
+        selectionMode === false ?
+            this.props.turnOnSelectionMode() :
+            this.turnOffSelectionMode()
+        this.toggleDeleteEventIcon()
+    }
+
+    turnOffSelectionMode = () => {
+        this.props.turnOffSelectionMode()
+        this.clearSelectedEvents()
+    }
+
+    clearSelectedEvents = () => {
+        this.setState({
+            selectedEvents: []
+        })
+    }
+
     render() {
+        const { mode } = this.props
+
         return (
             <SafeAreaView style={styles.container}>
                 {!(this.state.events.length == 0) && <FlatList
@@ -220,16 +247,10 @@ export default class TypedEventList extends Component<Props, State> {
                     renderItem={({ item }) =>
                         <TouchableNativeFeedback
                             useForeground={false}
-                            onPress={() => {
-                                this.state.longPressed ?
-                                    this.handleSelectableEventPress(item)
-                                    : this.navigateToDetailScreen(item)
-                            }}
-                            onLongPress={
-                                () => this.toggleEventSelectionMode()
-                            }>
+                            onPress={() => this.handleEventPress(item)}
+                            onLongPress={() => this.toggleSelectionMode(mode)}>
                             <View style={{ flex: 2.8 }}>
-                                {this.state.longPressed ?
+                                {mode === true ?
                                     <SelectableEventCard
                                         event={item}
                                         ref={(SelectableEventCard) => { this.eventsRow[item.id] = SelectableEventCard }} />
@@ -246,7 +267,7 @@ export default class TypedEventList extends Component<Props, State> {
                     <Text
                         style={styles.noEventsText}>No events added.</Text>)}
 
-                {this.state.longPressed === false && <ActionButton
+                {mode === false && <ActionButton
                     style={styles.button}
                     key="fab"
                     onPress={this.handleAddEvent}
@@ -256,7 +277,6 @@ export default class TypedEventList extends Component<Props, State> {
             </SafeAreaView>
         )
     }
-
 }
 
 const styles = StyleSheet.create({
@@ -280,3 +300,23 @@ const styles = StyleSheet.create({
         color: '#000000'
     }
 })
+
+const mapStateToProps = state => {
+    const { selectionMode } = state
+
+    return {
+        mode: selectionMode.selectionMode
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        turnOnSelectionMode: () => dispatch(turnOnSelectionMode()),
+        turnOffSelectionMode: () => dispatch(turnOffSelectionMode())
+    }
+}
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(TypedEventList)

@@ -1,12 +1,27 @@
-import { TOGGLE_SELECTION_MODE} from '../actions/types'
+import { TURN_ON_SELECTION_MODE, TURN_OFF_SELECTION_MODE } from '../actions/types'
 
-const initialState = false
+const initialState = {
+    selectionMode: false
+}
 
-export default(state = initialState, action) => {
-    switch(action.type) {
-        case TOGGLE_SELECTION_MODE:
-            return !state
+export default selectionModeReducer = (state = initialState, action) => {
+    console.log(`Action type : ${action.type}`)
+    console.log(`Current selectionMode : ${state.selectionMode}`)
+    switch (action.type) {
+        case TURN_ON_SELECTION_MODE:
+            return {
+                ...state,
+                selectionMode: true
+            }
+        case TURN_OFF_SELECTION_MODE:
+            return {
+                ...state,
+                selectionMode: false
+            }
         default:
-            return state
+            return {
+                ...state,
+                selectionMode: false
+            }
     }
 }

@@ -1,9 +1,14 @@
 import React from 'react'
 import { YellowBox } from 'react-native'
-import TypedEventList from './screens/TypedEventList'
-import TypedEventForm from './screens/TypedEventForm'
+import TypedEventList from './view/TypedEventList'
+import TypedEventForm from './view/TypedEventForm'
 import { createStackNavigator, createAppContainer } from 'react-navigation'
-import TypedEventDetails from './screens/TypedEventDetails';
+import TypedEventDetails from './view/TypedEventDetails';
+import { Provider } from 'react-redux'
+import { createStore } from 'redux'
+import combineReducers from './redux/reducers/index'
+
+const store = createStore(combineReducers)
 
 YellowBox.ignoreWarnings([
   'Warning: componentWillMount is deprecated',
@@ -28,15 +33,18 @@ const AppNavigator = createStackNavigator({
   }
 })
 
-export default createAppContainer(AppNavigator)
+const AppContainer = createAppContainer(AppNavigator)
 
-class App extends React.Component {
+export default class App extends React.Component {
 
   constructor(props) {
     super(props)
   }
 
   render() {
-    return <AppNavigator />
+    return (
+      <Provider store={store}>
+        <AppContainer />
+      </Provider>)
   }
 }
