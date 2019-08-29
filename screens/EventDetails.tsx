@@ -1,87 +1,65 @@
 import React from 'react'
-import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert, Keyboard } from 'react-native'
+import { connect } from "react-redux";
+import { View, Text, TouchableHighlight, TextInput, StyleSheet, Keyboard } from 'react-native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { formatDateTime } from '../api'
-import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
 import { NavigationScreenProp } from 'react-navigation'
 import Event from '../model/Event'
+import { updateEventAction } from '../redux/actions/events';
 
 interface Props {
-    navigation: NavigationScreenProp<any,any>
+    navigation: NavigationScreenProp<any, any>;
+    updateEvent: (e: Event) => void;
 };
 
 interface State {
+    event: Event
     modified: boolean
-    title: string
-    date: Date
     showDatePicker: boolean
 }
 
-export default class EventDetails extends React.Component<Props, State> {
+export class EventDetails extends React.Component<Props, State> {
 
-    event: Event = null
-
-    constructor(props) {
-        super(props)
+    componentWillMount() {
+        const event = this.props.navigation.getParam("event", {})
+        this.setState({ event: event })
     }
-
-    componentDidMount() {
-        let event: Event = this.event = this.props.navigation.getParam("event", {})
-        this.setState({ title: event.title, date: event.date })
-    }
-
 
     state: State = {
-        title: null,
-        date: null,
+        event: null,
         modified: false,
         showDatePicker: false
     }
 
-    writeEventToRealm = (title, date) => {
-        Realm.open(EVENT_SCHEMA).then(realm => {
-            try {
-                realm.write(() => {
-                    realm.create(EVENTS_KEY,
-                        {
-                            "title": title,
-                            "date": date,
-                            "id": this.event.id
-                        }, true) //flag indicating update mode in realm
-                })
-            }
-            catch (error) {
-                Alert.alert(`Problem occured while writing to Realm. ${error}`)
-                console.log(`Problem occured while writing to Realm. ${error}`)
-            }
-        })
-            .catch(error => {
-                Alert.alert(`Problem occured while opening Realm instance.  ${error}`)
-                console.log(`Problem occured while openin Realm instance. ${error}`)
-            }
-            );
-    }
-
-    handleSavePress = (title, date) => {
-        if (this.state.title === null || this.state.date === null)
-            alert('Enter event title and date.')
+    handleSavePress = () => {
+        const { updateEvent, navigation } = this.props;
+        const { event } = this.state;
+        const { title, date } = event;
+        if (title === null || date === null)
+            alert('Enter event title and date.');
         else {
-            this.writeEventToRealm(title, date)
-            this.props.navigation.goBack()
+            updateEvent(event);
+            navigation.goBack();
         }
     }
 
-    handleChangeTitle = (value) => {
-        this.setState({ modified: true, title: value })
+    handleChangeTitle = (value: string) => {
+        this.setState(prevState => ({
+            modified: true,
+            event: { ...prevState.event, title: value }
+        }))
     }
 
     handleDatePress = () => {
         this.setState({ showDatePicker: true })
     }
 
-    handleDatePicked = (date) => {
+    handleDatePicked = (date: Date) => {
         this.handleDatePickerHide()
-        this.setState({ modified: true, date: date })
+        this.setState(prevState => ({
+            modified: true,
+            event: { ...prevState.event, date: date }
+        }))
     }
 
     handleDatePickerHide = () => {
@@ -90,6 +68,8 @@ export default class EventDetails extends React.Component<Props, State> {
     }
 
     render() {
+        const { modified, showDatePicker, event } = this.state;
+        const { title, date } = event
         return (
             <View
                 style={{
@@ -100,21 +80,22 @@ export default class EventDetails extends React.Component<Props, State> {
                         style={styles.text}
                         placeholder="Event title"
                         spellCheck={false}
-                        value={this.state.title}
+                        value={title}
                         onChangeText={this.handleChangeTitle}
                     />
                     <TextInput
                         style={[styles.text, styles.borderTop]}
                         placeholder="Event date"
                         spellCheck={false}
-                        value={formatDateTime(this.state.date)}
+                        value={formatDateTime(date)}
                         onFocus={this.handleDatePress}
                     />
                     <DateTimePicker
-                        isVisible={this.state.showDatePicker}
+                        isVisible={showDatePicker}
                         mode='datetime'
                         onConfirm={(date) => {
-                            this.handleDatePicked(date)}}
+                            this.handleDatePicked(date)
+                        }}
                         onCancel={() => {
                             this.handleDatePickerHide()
                         }
@@ -122,15 +103,26 @@ export default class EventDetails extends React.Component<Props, State> {
                     />
                 </View>
                 <TouchableHighlight
-                    onPress={() => { this.handleSavePress(this.state.title, this.state.date) }}
+                    onPress={() => { this.handleSavePress() }}
                     style={styles.button}
                 >
-                    <Text style={{ color: '#ffffff' }}>{this.state.modified ? "SAVE AND GO BACK" : "BACK"}</Text>
+                    <Text style={{ color: '#ffffff' }}>{modified ? "SAVE AND GO BACK" : "BACK"}</Text>
                 </TouchableHighlight>
             </View>
         )
     }
 }
+
+const mapDispatchToProps = dispatch => {
+    return {
+        updateEvent: (e: Event) => dispatch(updateEventAction(e))
+    }
+}
+
+export default connect(
+    null,
+    mapDispatchToProps
+)(EventDetails)
 
 const styles = StyleSheet.create({
     fieldContainer: {
@@ -158,7 +150,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18
     },
-
     borderTop: {
         borderColor: '#edeeef',
         borderTopWidth: 0.5

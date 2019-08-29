@@ -1,49 +1,24 @@
 import React from 'react'
-import { Text, View, StyleSheet } from 'react-native'
+import { Text, View, StyleSheet, } from 'react-native'
 import { formatDate, getCountdownParts } from '../api'
-import { NavigationScreenProp } from 'react-navigation'
 import Event from '../model/Event'
 
 interface Props {
-    event: Event
+    event: Event;
 };
 
-interface State {
-    selected: boolean
-}
+const EventCard = (props: Props) => {
 
-export default class EventCard extends React.PureComponent<Props, State> {
+    let event: Event = props.event
+    const {
+        days,
+        hours,
+        minutes,
+        seconds,
+    } = getCountdownParts(event.date)
 
-    state: State = {
-        selected: false
-    }
-
-    constructor(props: Props) {
-        super(props)
-        this._onPress.bind(this)
-    }
-
-
-    _onPress = function (item) {
-        alert(`Clicked ${item.id}`)
-    }
-
-    toggleSelectionMode = (prevState) => {
-        this.setState({
-            selected: !prevState.selected
-        })
-    }
-
-    getEventCardRenderer = () => {
-        let event: Event = this.props.event
-        const {
-            days,
-            hours,
-            minutes,
-            seconds,
-        } = getCountdownParts(event.date)
-
-        return (<View style={styles.card}>
+    return (
+        <View style={styles.card}>
             <View style={styles.cardHeader}>
                 <Text style={styles.date}>{formatDate(event.date)}</Text>
                 <Text style={styles.title}>{event.title}</Text>
@@ -70,21 +45,17 @@ export default class EventCard extends React.PureComponent<Props, State> {
                     <Text style={styles.counterLabel}>SECONDS</Text>
                 </View>
             </View>
-        </View>)
-    }
-
-    render() {
-        return (this.getEventCardRenderer())
-    }
+        </View>
+    )
 }
+
+export default EventCard
 
 const styles = StyleSheet.create({
     card: {
+        flex: 1,
         backgroundColor: '#ffffff',
-        marginHorizontal: 15,
-        marginBottom: 15
     },
-
     cardHeader: {
         flex: 1,
         flexDirection: 'row'
@@ -127,7 +98,6 @@ const styles = StyleSheet.create({
         fontWeight: '100',
         color: '#a3a3a3',
         textAlign: 'center',
-        paddingTop: 0
     }
 
 })
