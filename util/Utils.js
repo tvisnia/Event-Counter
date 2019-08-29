@@ -1,5 +1,6 @@
+import Event from '../model/Event'
 //Realm utils
-export const EVENTS_KEY: string = 'Event'
+export const EVENTS_KEY = 'Event'
 export const EVENT_SCHEMA = {
     schema: [{
         name: EVENTS_KEY,
@@ -10,6 +11,10 @@ export const EVENT_SCHEMA = {
             id: 'string'
         }
     }],
-    schemaVersion:2
+    schemaVersion: 2
 }
+
+export const sort = (a: Event, b: Event) => {
+    return new Date(b.date) - new Date(a.date);
+};
 

@@ -2,11 +2,14 @@ import React from 'react'
 import { View, Text, TouchableHighlight, TextInput, StyleSheet, Alert, Keyboard } from 'react-native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { formatDateTime } from '../api'
-import { EVENTS_KEY, EVENT_SCHEMA } from '../util/Utils'
+import { connect } from "react-redux";
+import { addEventAction } from '../redux/actions/events'
 import { NavigationScreenProp } from 'react-navigation'
+import Event, { createEvent } from '../model/Event';
 
 interface Props {
-    navigation: NavigationScreenProp<any,any>
+    navigation: NavigationScreenProp<any, any>
+    addEvent: (event: Event) => void;
 };
 
 interface State {
@@ -14,43 +17,26 @@ interface State {
     date: Date
     realm: any
     showDatePicker: boolean
+    eventAdded: boolean
 }
 
-
-export default class TypedEventForm extends React.Component<Props, State> {
+class EventForm extends React.Component<Props, State> {
 
     state: State = {
         title: null,
         date: null,
         realm: null,
         showDatePicker: false,
-    }
-
-    writeEventToRealm = ({ title, date }) => {
-        Realm.open(EVENT_SCHEMA).then(realm => {
-            if (this.state.realm == null) this.setState({ realm: realm });
-            try {
-                realm.write(() => {
-                    // if (realm.objects(EVENTS_KEY).filtered(`id=${}"`).length === 0)
-                    realm.create(EVENTS_KEY, {
-                        "title": title,
-                        "date": date,
-                        "id": title + date.toString()
-                    })
-                })
-                // console.log("Objects : " + realm.objects('Event').length)
-            }
-            catch (error) { Alert.alert(`Problem occured while opening Realm instance : ${error}`) }
-        })
-            .catch(error => Alert.alert(`Problem occured while writing to Realm : ${error}`
-            ));
+        eventAdded: false
     }
 
     handleAddPress = () => {
+        const { title, date, eventAdded } = this.state;
         if (this.state.title === null || this.state.date === null)
-            Alert.alert('Enter event title and date.')
+            Alert.alert('Enter event title and date.');
         else {
-            this.writeEventToRealm(this.state)
+            this.props.addEvent(createEvent(title, date));
+            this.setState({ eventAdded: !eventAdded })
             this.props.navigation.goBack()
         }
     }
@@ -74,36 +60,35 @@ export default class TypedEventForm extends React.Component<Props, State> {
     }
 
     render() {
+        const { showDatePicker, date, title, eventAdded } = this.state;
         return (
-            <View
-                style={{
-                    flex: 1
-                }}>
+            <View style={{ flex: 1 }}>
                 <View style={styles.fieldContainer}>
                     <TextInput
                         style={styles.text}
                         placeholder="Event title"
                         spellCheck={false}
-                        value={this.state.title}
+                        value={title}
                         onChangeText={this.handleChangeTitle}
                     />
                     <TextInput
                         style={[styles.text, styles.borderTop]}
                         placeholder="Event date"
                         spellCheck={false}
-                        value={(formatDateTime(this.state.date ? this.state.date.toString() : ''))}
+                        value={(formatDateTime(date ? date.toString() : ''))}
                         onFocus={this.handleDatePress}
                     />
                     <DateTimePicker
-                        isVisible={this.state.showDatePicker}
+                        isVisible={showDatePicker}
                         mode='datetime'
-                        onConfirm={(date) => this.handleDatePicked(date)}
-                        onCancel={() => this.handleDatePickerHide()}
+                        onConfirm={this.handleDatePicked}
+                        onCancel={this.handleDatePickerHide}
                     />
                 </View>
                 <TouchableHighlight
                     onPress={this.handleAddPress}
                     style={styles.button}
+                    disabled={eventAdded}
                 >
                     <Text style={{ color: '#ffffff' }}>ADD</Text>
                 </TouchableHighlight>
@@ -111,6 +96,17 @@ export default class TypedEventForm extends React.Component<Props, State> {
         )
     }
 }
+
+const mapDispatchToProps = dispatch => {
+    return {
+        addEvent: (evt: Event) => dispatch(addEventAction(evt)),
+    }
+}
+
+export default connect(
+    null,
+    mapDispatchToProps
+)(EventForm)
 
 const styles = StyleSheet.create({
     fieldContainer: {

@@ -1,9 +1,18 @@
 export default interface Event {
-    title:string
+    title: string
     date: Date
     id: string
 }
 
-export function generateIdForEvent(event: Event) {
-    return event.title + event.date.toString()
+export const createEvent = (title: string, date: Date): Event => {
+    const id: string = generateId(title, date);
+    return {
+        title: title,
+        date: date,
+        id: id
+    }
+}
+
+export const generateId = (title: string, date: Date): string => {
+    return title + date.toString()
 }
